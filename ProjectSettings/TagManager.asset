@@ -10,6 +10,7 @@ TagManager:
   - HealthTwo
   - HealthThree
   - Enemy
+  - GameOver
   layers:
   - Default
   - TransparentFX

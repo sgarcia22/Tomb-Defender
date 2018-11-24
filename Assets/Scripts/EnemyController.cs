@@ -13,6 +13,7 @@ public class EnemyController : MonoBehaviour {
     private float speed = 2f;
     private bool attacking = false;
     private bool waitHealthDecrease = false;
+    private bool nearPlayer = false;
 
     // Use this for initialization
     void Start () {
@@ -20,6 +21,7 @@ public class EnemyController : MonoBehaviour {
         gameController = GameObject.FindGameObjectWithTag("GameController");
         //playerController = gameController.GetComponent<PlayerController>();
         anim = gameObject.GetComponent<Animator>();
+
     }
 
     // Update is called once per frame
@@ -37,6 +39,7 @@ public class EnemyController : MonoBehaviour {
         //Follow the player through the arena 
         if (Vector3.Distance(enemyLocation, playerLocation) >= 3)
         {
+            nearPlayer = false;
             float xDistance = enemyLocation.x - playerLocation.x;
             float zDistance = enemyLocation.z - playerLocation.z;
             if (Mathf.Abs(xDistance) > Mathf.Abs(zDistance))
@@ -57,10 +60,11 @@ public class EnemyController : MonoBehaviour {
         }
         else
         {
+            nearPlayer = true;
             //Attack
             if (attacking == false)
             {
-                StartCoroutine("Attack");
+                StartCoroutine("WaitForAttack");
                 //StartCoroutine("PlayExplosion");
             }
             else
@@ -71,11 +75,11 @@ public class EnemyController : MonoBehaviour {
         gameObject.transform.LookAt(player.transform);
     }
 
-    IEnumerator Attack()
+    IEnumerator WaitForAttack()
     {
         anim.SetBool("attacking", true);
         attacking = true;
-        yield return new WaitForSeconds(3); //Wait for a bit before attacking
+        yield return new WaitForSeconds(2); //Wait for a bit before attacking
         anim.SetBool("attacking", false);
         anim.SetBool("nearPlayer", false);
         attacking = false;
@@ -83,33 +87,47 @@ public class EnemyController : MonoBehaviour {
 
     void OnTriggerEnter(Collider collision)
     {
-        Debug.Log(collision.name);
-        if (collision.tag == "Character" && anim.GetBool("attacking") == true && waitHealthDecrease == false)
+        if (collision.tag == "Character" && attacking == true && waitHealthDecrease == false)
         {
+            StartCoroutine("WaitForHealthDecrease", collision.gameObject);
+        }
+        if (collision.tag == "Character")
+        {
+            Debug.Log("Hitting Character");
+            if (collision.gameObject.GetComponent<Animator>().GetBool("punch") == true)
+            {
+                
+                Destroy(gameObject);
+                PlayerController.Score++;
+                Spawner.totalEnemiesInWorld--;
+            }
+        }
+    }
+
+    //Wait to decrease the next health heart
+    IEnumerator PlayerLoseHealth ()
+    {
+        yield return new WaitForSeconds(2);
+        waitHealthDecrease = false;
+    }
+
+    //Used to stop the enemy from inflicting damage from the get go
+    IEnumerator WaitForHealthDecrease (GameObject player)
+    {
+        yield return new WaitForSeconds(1);
+        if (nearPlayer && waitHealthDecrease == false)
+        {
+            gameObject.GetComponent<AudioSource>().Play();
             PlayerController.Health -= 1;
-            waitHealthDecrease = true;
             if (PlayerController.Health == 2)
                 GameObject.FindGameObjectWithTag("HealthOne").SetActive(false);
             else if (PlayerController.Health == 1)
                 GameObject.FindGameObjectWithTag("HealthTwo").SetActive(false);
             else
                 GameObject.FindGameObjectWithTag("HealthThree").SetActive(false);
+            player.GetComponent<AudioSource>().Play();
+            waitHealthDecrease = true;
             StartCoroutine("PlayerLoseHealth");
         }
-        if (collision.tag == "Character")
-        {
-            Debug.Log(collision.tag);
-            Debug.Log(collision.gameObject.GetComponent<Animator>().GetBool("punch"));
-            if (collision.gameObject.GetComponent<Animator>().GetBool("punch") == true)
-            {
-                Destroy(gameObject);
-            }
-        }
-    }
-
-    IEnumerator PlayerLoseHealth ()
-    {
-        yield return new WaitForSeconds(2);
-        waitHealthDecrease = false;
     }
 }

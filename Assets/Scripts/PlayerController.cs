@@ -1,11 +1,14 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class PlayerController : MonoBehaviour {
 
     public GameObject player;
     public GameObject arrow;
+    public GameObject gameOver;
+    public Text scoreText; 
     [SerializeField]
     private float speed = 3f;
     private Animator anim;
@@ -13,15 +16,26 @@ public class PlayerController : MonoBehaviour {
     private bool punching = false;
 
     public static int Health = 3;
+    public static int Score = 0;
 
     // Use this for initialization
     void Start () {
- 
+        gameOver.SetActive(false);
         anim = player.GetComponent<Animator>();
+        Debug.Log(Health);
 	}
 	
 	// Update is called once per frame
 	void Update () {
+        if (Health <= 0)
+        {
+            gameOver.SetActive(true);
+            Health = 3;
+            return;
+        }
+        Debug.Log("scoreee" +Score);
+        scoreText.text = Score.ToString();
+
         Vector3 pos = player.transform.position;
         //Move forwards
 		if (Input.GetKey(KeyCode.W))
